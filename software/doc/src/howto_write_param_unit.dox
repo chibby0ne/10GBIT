@@ -1,0 +1,152 @@
+/** \page howto_write_param_unit_page How to write a new parameter unit
+
+
+Before starting to implement or convert existing code to a new parameter unit, please read
+\ref chain_concept_page. The chapter explain the design idea behind the
+software.
+
+For writing a new parameter unit for the simulation you have to do the following steps:
+
+\li \ref param_unit_create_param
+\li \ref param_unit_class_coding
+\li \ref param_unit_doc
+\li \ref param_unit_register
+
+In the following these steps are explained in more detail at the example of a
+standard-compliant parameter unit.
+
+
+\section param_unit_create_param Create a parameter class for the parameter unit
+
+Writing the parameter class for the parameter unit is pretty much the same as 
+writing a parameter class for a module. Please read \ref param_unit before
+proceeding. The difference is that now output parameters are defined using the
+Param_Out container.
+
+
+\section add_param Adding input and output parameters to the class
+
+Parameters of the parameter unit are added to the public part of the class.
+Use Doxygen comments here (triple slash for short description). A detailed
+description is optional, but should be given, when applicable.
+All input parameters have to use the container class Param, all output
+parameters the container class Param_Out, respectively.
+
+\code
+public:
+	....
+
+	// Input Parameters
+
+	/// Modulation and FEC indicator field as defined by the standard.
+	Param<unsigned int> mcs_field;
+
+	/// Duration
+	/**
+	 *  - 0 = PNB2(5, 3)
+	 *  - 1 = PNB2(5, 12)
+	 **/
+	Param<unsigned int> duration;
+
+
+	// Output Parameters
+
+	/// Number of information bits of the LDPC codeword
+	Param_Out<unsigned int> num_info_bits;
+
+	/// Currently used modulation scheme.
+	Param_Out<Mapper_Share::MAPPINGS_ENUM> mapping;
+
+	...
+\endcode
+
+
+\section param_default Initialization and registration of parameters
+
+Like for parameter classes of the modules, a default value has to be given for
+the input parameters.  The output parameters do not need a default value,
+however, they have to be registered with a string:
+\code
+protected:
+
+	/// Set all values to their default
+	virtual void Set_Default_Values()
+	{
+		// Input parameters
+		mcs_field.Init(3, "mcs_field", param_list_);
+		duration.Init(0, "duration", param_list_);
+
+		// Output parameters
+		num_info_bits.Register("num_info_bits", param_list_);
+		mapping.Register("mapping", param_list_);
+		...
+
+		mapping.Link_Value_String(Mapper_Share::MAP_QPSK_PI4, "MAP_QPSK_PI4");
+		mapping.Link_Value_String(Mapper_Share::MAP_16_APSK,  "MAP_16_APSK");
+		mapping.Link_Value_String(Mapper_Share::MAP_32_APSK,  "MAP_32_APSK");
+	}
+\endcode
+
+Document the Set_Default_Values() method with doxygen comments that state
+the default values for the module! Only then the user knows about the default
+values from the documentation!
+
+
+\section auto_conf Add Automatic Configuration Capability
+
+The parameter unit is configured automatically by the environment. As for 
+functional modules, writing a custom Config_From_Data_Struct() method is
+possible, though.
+
+The parameter class for the parameter unit is complete now.
+
+
+\section param_unit_class_coding Writing the parameter unit itself
+
+Writing a parameter unit is the same as writing a module, see \ref howto_write_module_page.
+But instead of calculating data for the output port, the purpose of the Run() function
+is to write values to the output parameters.
+
+\code
+int Param_Unit_GMR::Run()
+{
+	if(param_list_.config_modified())
+		Init();
+
+	return 0;
+}
+
+void Param_Unit_GMR::Init()
+{
+	Get_Num_Info_Bits();
+	Get_Mapping();
+
+	param_list_.config_modified(false);
+}
+\endcode
+
+Also, make sure that the parameter unit is derived from the Base_Interface class and
+its parameter class.
+
+
+\section param_unit_doc Documentation of the Module
+
+Remember to document the parameters and the functionality of the parameter unit
+with doxygen comments such that other users can use your unit!
+
+
+\section param_unit_register Make the Module Visible for the Configuration
+
+The CSE environment allows for an automatic configuration via XML configuration files, see \ref param_unit_tag.
+One important part of the configuration file are the parameter units, see \ref param_unit_concept.
+
+To enable all these advanced features, you have to register the parameter unit in a unqiue list.
+The environment provides the template function Manage_Module_Config::Register_Module to do this.
+\code
+Manage_Module_Config::Registger_Module<Param_Unit_GMR>();
+\endcode
+You have to register your parameter unit before reading a XML configuration file with the Manage_Module_Config class.
+
+
+*/
+

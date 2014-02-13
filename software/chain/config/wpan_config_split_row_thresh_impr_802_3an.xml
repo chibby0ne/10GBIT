@@ -1,0 +1,112 @@
+
+<cse_chain>
+	<global>
+		<!--Code Rate 1/2-->
+        <variable name="num_bits">2048</variable>
+		<variable name="num_info_bits">1723</variable>
+		<variable name="num_other_bits">325</variable>
+		<variable name="ldpc_code_rate">IEEE_802_3an_P1_N2048_R084</variable>
+
+		<!--<variable name="num_bits_per_symbol">4</variable>-->
+		<!--<variable name="mapping">MAP_16_QAM</variable>-->
+		<!--<variable name="num_bits_per_symbol">6</variable>-->
+		<!--<variable name="mapping">MAP_64_QAM</variable>-->
+		<variable name="num_bits_per_symbol">1</variable>
+        <!--<variable name="mapping">MAP_QPSK</variable>-->
+		<variable name="mapping">MAP_BPSK</variable>
+
+		<!--<variable name="num_ldpc_inner_iterations0">15</variable>-->
+		<!--<variable name="num_ldpc_inner_iterations1">0</variable>-->
+
+		<variable name="num_ldpc_inner_iterations">15</variable>
+
+		<!--64 QAM bit widths-->
+		<variable name="bw_fl2fix">6</variable>
+		<variable name="bw_fl2fix_fract">2</variable>
+
+		<variable name="bw_dec_app">9</variable>
+		<variable name="bw_dec_ext">6</variable>
+
+		<variable name="bw_dec_fract">2</variable>
+
+		<iter>
+			<variable name="eb_n0">1:1:10</variable>
+		</iter>
+
+		<variable name="es_n0"><param param_unit="SNR" name="es_n0"/></variable>
+		<variable name="noise_variance"><param param_unit="SNR" name="noise_variance"/></variable>
+	</global>
+
+	<param_unit unique_id="Param_Unit_SNR">
+		<instance_name>SNR</instance_name>
+		<input_snr><global_variable name="eb_n0"/></input_snr>
+		<input_type>EB_N0</input_type>
+		<num_info_bits><global_variable name="num_info_bits"/></num_info_bits>
+		<num_other_bits><global_variable name="num_other_bits"/></num_other_bits>
+		<num_bits_per_symbol><global_variable name="num_bits_per_symbol"/></num_bits_per_symbol>
+
+		<param name = "noise_variance"></param>
+		<param name = "es_n0"></param>
+		<param name = "eb_n0"></param>
+	</param_unit>
+
+	<module>
+		<instance_name>Source_Bits</instance_name>
+		<!-- start_seed>123123</start_seed -->
+		<num_bits><global_variable name="num_bits"/></num_bits>
+		<crc_poly>0</crc_poly>
+		<mode>All_zero</mode>
+		<!--<mode>All_zero</mode>-->
+	</module>
+
+    <!--<module>
+		<instance_name>Encoder_LDPC_IEEE_802_11ad</instance_name>
+        <<ldpc_code><global_variable name="ldpc_code_rate"/></ldpc_code>>
+    </module>-->
+
+	<module>
+		<instance_name>Mapper</instance_name>
+		<mapping><global_variable name="mapping"/></mapping>
+	</module>
+
+	<module>
+		<instance_name>Channel_AWGN</instance_name>
+		<noise_variance><global_variable name="noise_variance"/></noise_variance>
+	</module>
+
+	<module>
+		<instance_name>Demapper</instance_name>
+		<mapping><global_variable name="mapping"/></mapping>
+		<noise_variance><global_variable name="noise_variance"/></noise_variance>
+	</module>
+
+	<module>
+		<instance_name>Converter_Float_Fixpoint</instance_name>
+		<bw_output><global_variable name="bw_fl2fix"/></bw_output>
+		<bw_output_fract><global_variable name="bw_fl2fix_fract"/></bw_output_fract>
+	</module>
+
+	<module>
+		<instance_name>Decoder_LDPC_IEEE_802_3an</instance_name>
+		<bw_fract><global_variable name="bw_dec_fract"/></bw_fract>
+		<bw_extr><global_variable name="bw_dec_ext"/></bw_extr>
+		<bw_app><global_variable name="bw_dec_app"/></bw_app>
+		<esf_factor>0.875</esf_factor>
+		<dec_algorithm>SPLIT_ROW_IMPROVED</dec_algorithm>
+        <num_partitions>2</num_partitions>
+        <threshold>12</threshold>
+        <!--<edges_threshold>7</edges_threshold>-->
+		<!--<scheduling>LAYERED</scheduling>-->
+		<scheduling>TWO_PHASE</scheduling>
+		<ldpc_code><global_variable name="ldpc_code_rate"/></ldpc_code>
+	</module>
+
+	<module>
+		<instance_name>error_rates_decoding</instance_name>
+		<max_num_diff_blocks>80</max_num_diff_blocks>
+		<max_num_total_blocks>100000</max_num_total_blocks>
+	</module>
+
+
+
+</cse_chain>

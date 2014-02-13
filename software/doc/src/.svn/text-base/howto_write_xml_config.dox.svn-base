@@ -1,0 +1,287 @@
+/**
+\page howto_write_xml_config_page How to write and organize an XML configuration file
+
+This page shows how to setup an own XML configuration file for simulation
+chains. Furthermore, it shows how to configure modules using the XML 
+configuration file.
+
+\section module_tag The <module> tag
+
+Here is an excerpt of a typical XML configuration file:
+
+\code
+
+<cse_chain>
+
+	<!-- Set Mapper to 16-APSK modulation -->
+	<module>
+		<instance_name>Mapper</instance_name>
+		<mapping>MAP_16_APSK</mapping>
+	</module>
+
+	<module>
+	...
+	</module>
+
+	...
+</cse_chain>
+
+
+\endcode
+
+
+The XML-file has to contain a main tag \<cse_chain\> that contains all other
+tags.  Each module is identified with the \<instance_name\> tag. This tag
+corresponds to the instance_name parameter that is contained in each module,
+when it is derived from the Base_Parameter class. By default, the instance name
+corresponds to the class name of the module.  Additional tags are dependant on
+the Parameter class of the module. The module defines such tags by registering
+the parameter with the cse_lib::Param::Init-function within the param_list_ with
+their corresponding strings, see \ref howto_write_module_page.  The module
+is able to read the data types bool, int, float, double, long long int, and
+string. For int values it is possible to use prefixes like "0x" or 0o".
+
+The xml sub tree to configure a module can be printed to stdout with the static function
+Parse_Module_Config::Print_Module_Config_XML_Tree(). This feature will save a lot of code typing work.
+
+
+\section global_tag The <global> tag
+
+In addition to the \<module\> tag, there exists an optional \<global\> tag. The
+purpose of this tag is to spread values to a multiple number of modules,
+without the need to set this value at multiple places of the XML file:
+
+\code
+
+<cse_chain>
+
+	<global>
+		<variable name="mapping">MAP_QPSK</variable>
+	</global>
+
+	<!-- Set Mapper Parameters -->
+	<module>
+		<instance_name>Mapper</instance_name>
+		<mapping><global_variable name="mapping"/></mapping>
+	</module>
+
+	<!-- Set Demapper Parameters -->
+	<module>
+		<instance_name>Demapper</instance_name>
+		<mapping><global_variable name="mapping"/></mapping>
+	</module>
+
+	...
+</cse_chain>
+
+\endcode
+
+The parameter "mapping" is defined at just a single place and the creonic
+simulation environment makes sure that both modules will have the same
+configuration by inserting the value of the global variable into the
+corresponding tags.
+
+
+\subsection iter_tag The \<iter\> tag
+
+Up to now we have created a static configuration. It is not possible to iterate
+over a variable, e.g., the signal-to-noise ratio (SNR). Therefore, the \<iter\>
+tag is introduced in the global section. The variables defined there are
+iterative variables and can be used just like normal global variables.
+
+\code
+...
+	<global>
+		<iter>
+			  <variable name="eb_n0">10; 12; 13</variable>
+			  <variable name="quant">10.0:0.1:11.0</variable>
+		</iter>
+	</global>
+...
+\endcode
+
+Several possibilities exist in order to define the iteration interval:
+
+\li Semicolon separated list; the variable eb_n0 is defined like that.  
+\li "start:incr:end" format; all values including the start and the end values are
+taken for the configuration.  The incr value gives the increment. If the
+increment is missed ("start:end") an increment value of one is assumed.  
+
+You can mix possibility one with the other ones, e.g., "10; 11; 31:0.5:32" 
+results in the sequence 10, 11, 31, 31.5,32. 
+The variables defined in \<iter\> section become normal global variables and
+can be used in the module sections.  The class Manage_Module_Config creates for
+each value a static configuration, which can be passed to the modules.
+
+In case multiple iteration variables exist, the order of the iteration variable
+definition is important. The first value is taken as the inner iteration
+variable.  In the example above, the configuration will iterate over eb_n0 (10,12,13)
+with the fixed values quant = 10 and offset = 28.  After that it will iterate
+over eb_no with the fixed values quant = 11 and offset = 28.
+
+
+\subsection data_sets The \<data_set\> tag
+
+In some cases you might want to iterate over a variable, but the values of
+another variable depend on the current value of the iteration variable.
+For instance if you create a simulation with different code rates, you
+want to iterate over different SNR regions for each code rate.
+
+The \<data_set\> tag allows for such a behavior of the simulation. In this tag
+you can define a set of iteration variables.  Within one set, the behavior is
+exactly the same as for the normal iteration variables as shown above.
+
+The following example shows two data sets with different SNR regions for two
+different block lengths:
+\code
+...
+	<global>
+		<iter>
+			<data_set>
+				<variable name="eb_n0">1.0:0.25:3.0</variable>
+				<variable name="blocklength">100</variable>
+			</data_set>
+			<data_set>
+				<variable name="eb_n0">5:5:0.5:7.0</variable>
+				<variable name="blocklength"500</variable>
+			</data_set>
+
+		</iter>
+	</global>
+...
+\endcode
+
+You can define as many data sets as you want, <b> but all data sets must have
+exactly the same iteration variables! </b> It is not possible to create data
+sets with different iteration variables!
+
+This concept allows for a high flexibility, e.g., one can define a single
+configuration file that includes all cases of a communication standard.
+
+In addition, one has the possibility to deactivate a single data set by adding
+the \"active\" attribute with the value \"false\".
+\code
+...
+			<data_set active="false">
+				<variable name="eb_n0">5:5:0.5:7.0</variable>
+				<variable name="blocklength"500</variable>
+			</data_set>
+...
+\endcode
+
+With this concept it is very easy to manage many different simulation cases with
+a small number of configuration files.
+
+
+\section param_unit_tag The \< param_unit \> tag
+
+Parameter units allow for the translation of parameters into other parameters, 
+see \ref param_unit_concept.
+An extra \<param_unit\> tag exists for configuration of parameter units.  The
+unique_id attribute allows for an automatic instantiation of the parameter unit
+during runtime. For automatic instantiation of the parameter unit it is mandatory
+to register the unit in library/base/manage_dyn_instances.cpp, see also \ref
+howto_write_param_unit_page.
+
+\code
+	<global>
+		<variable name="info_bits">488</variable>
+		<variable name="other_bits">488</variable>
+		<variable name="mapping">MAP_QPSK</variable>
+		<variable name="num_bits_per_symbol">2</variable>
+		<variable name="noise_variance"><param param_unit="SNR" name="noise_variance"/></variable>
+		<iter>
+			<variable name="es_n0">1.8:0.2:2.2</variable>
+		</iter>
+	</global>
+
+	<param_unit unique_id="Param_Unit_SNR">
+		<instance_name>SNR</instance_name>
+		<input_snr><global_variable name="es_n0"/></input_snr>
+		<input_type>ES_N0</input_type>
+		<num_info_bits><global_variable name="info_bits"/></num_info_bits>
+		<num_other_bits><global_variable name="other_bits"/></num_other_bits>
+		<num_bits_per_symbol><global_variable name="num_bits_per_symbol"/></bits_per_symbol>
+		
+		<param name = "noise_variance"></param>
+		<param name = "eb_n0"></param>
+		<param name = "es_n0"></param>
+	</param_unit>
+
+	<module>
+		<instance_name>Mapper</instance_name>
+		<mapping><global_variable name="mapping"/></mapping>
+	</module>
+
+	<module>
+		<instance_name>Channel_AWGN</instance_name>
+		<noise_variance><global_variable name="noise_variance"/></noise_variance>
+	</module>
+
+	<module>
+		<instance_name>Demapper</instance_name>
+		<mapping><global_variable name="mapping"/></mapping>
+		<noise_variance><global_variable name="noise_variance"/></noise_variance>
+	</module>
+
+...
+\endcode
+
+
+It is possible to use multiple parameter units.  Even the propagation of
+parameters from one unit to another unit is supported. However, the propagation
+is limited into one direction only, i.e., the topmost parameter unit in the XML
+file updates its parameters first, then the second parameter unit, then the
+third, and so on.  Loops within the parameter propagation are prevented with
+this processing.
+
+\section check_consis Implemented XML consistency checks
+By using the Manage_Module_Configuration class a lot of consistency check are made.
+Each violation results either in a warning or an exception.
+
+<TABLE>
+<tr>
+<th>Check</th><th>Behavior</th><th>Remarks</th>
+</tr>
+<tr>
+<td>XML file structure check</td><td>Exception</td><td>Prints the position at the file where the parsing error occurs.</td>
+</tr>
+<tr>
+<td>Number of \<global\> tags</td><td>Warning</td><td>The first section is taken.</td>
+</tr>
+<tr>
+<td>Number of \<iter\> subtags in global section</td><td>Warning</td><td>The first section is taken.</td>
+</tr>
+<tr>
+<td>Check iter subtree structure</td><td>Exception</td><td>Only data sets or direct child variables are allowed, no mixed syntax.</td>
+</tr>
+<tr>
+<td>Number of active data set has to be one at least</td><td>Exception</td><td>Active at least one data set or remove them all.</td>
+</tr>
+<tr>
+<td>Check variable consistency within the data sets</td><td>Exception</td><td>All data sets need to have the same variables (name)!</td>
+</tr>
+<tr>
+<td>Check double variables within the data sets and the global section</td><td>Exception</td><td>Each variable name must be unique in a data set!</td>
+</tr>
+<tr>
+<td>Check linked variables</td><td>Exception</td><td>Print the variable name where the error occurs.</td>
+</tr>
+<tr>
+<td>Unique ID of param modules</td><td>Exception</td><td>Each parameter module must have a unique ID of an existing module.</td>
+</tr>
+<tr>
+<td>Check param module output ports</td><td>Exception</td><td>Follow the given hints and instructions to correct the configuration file.</td>
+</tr>
+<tr>
+<td>Check for unknown/invalid parameters in the module XML subtree</td><td>Exception</td><td>Remove or correct the given unknown parameter.</td>
+</tr>
+<tr>
+<td>Check the conversion of the tag data into the given type</td><td>Exception: invalid_argument</td><td>Correct the value in the tag to be conform to the datatype expected.</td>
+</tr>
+<tr>
+<td>Check the string parameter for a module</td><td>Exception: invalid_argument</td><td>Correct the value in the tag to match a given item.</td>
+</tr>
+</TABLE> 
+*/
+

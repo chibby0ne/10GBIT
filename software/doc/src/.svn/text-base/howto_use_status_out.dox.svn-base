@@ -1,0 +1,145 @@
+/** \page howto_use_status_out_page How to use the Status_Out interface container
+
+The cse_lib::Status_Out class is the data type for status ports of modules.
+Status information is a side information of the modules, which is not necessary
+for the functionality of the simulation chain (e.g., mean number of iterations
+of decoder).  The primary purpose is to collect statistic data.
+
+The Status_Out class is a very generic template class, which has no fixed behavior.
+The behavior or functionality and the interface of this class is determined by the given plug-in to use.
+\ref status_out_plugin gives a list of available plug-ins.
+
+
+\section status_out_general_usage General usage in a module
+
+\subsection status_out_definition Definition of the Status_Out port
+
+To define a port with the name decoding_successful, write the following code into your interface definition of your module:
+\code
+public:
+...
+  Status_Out<bool> decoding_successful;
+...
+\endcode
+
+The template parameter determines the data type of the status port.
+As for data ports using cse_lib::Data_In or cse_lib::Data_Out, the status port has to be registered with a name in
+a list within the constructor of the interface class:
+
+\code
+public:
+  ...
+  Module_Interface()
+  {
+    decoding_successful.Register("decoding_successful", status_out_list_, false);
+  }
+  ...
+\endcode
+
+The third parameter "true" indicates, to include the status port in an XML result file.
+The default value of this paraemter is "true", therefore you can omit this parameter.
+If you set the parameter to false, the result will not be written into the XML result file 
+via the Manage_Module_Result class.
+The flag can be changed later using cse_lib::Status_Out_Abstract::write_into_results setter function.
+
+
+\subsection status_out_usage Usage of the Status_Out port
+
+Before usage of the container, the module should reset its contents. Call the
+Reset function in the Init function of the module for this:
+
+\code
+Module::Init()
+{
+    ...
+    decoding_successful.Reset();
+    ...
+}
+\endcode
+
+As mentioned before, the functionality is pluggable. The plug-in to use is
+defined by the second (optional) template parameter. The default plug-in class
+named cse_lib::Status_Out_Plugin_Default is a simple container to store a
+single element at a given address.
+
+To access the plug-in the () operator is used. The default plug-in has a member
+function cse_lib::Status_Out_Plugin_Default::Write() to write new data into the
+container.
+\code
+...
+deocoding_successful().Write(false);
+...
+\endcode
+Each time the Write function is called the previous value is overwritten.
+
+
+\section mult_dim Multi-dimension support
+ 
+The status output port as an inherent support for multiple dimensions.
+You can specify the dimension with the second template parameter.
+The default value zero means that only one instance exists (i.e., one value can be stored with the default plug-in).
+Using higher order dimensions allows for addressing of single plug-ins.
+
+The following code example shows a port which can store several values in one dimension.
+You can address the position with the () operator. In this case you address the position 2.
+\code
+...
+Status_Out<bool, 1> decoding_successful;
+...
+decoding_successful(2)().Write(value)
+\endcode
+
+The number of dimensions is random, so it is also possible to use, e.g., three dimensions:
+\code
+...
+Status_Out<bool, 3> decoding_successful;
+...
+decoding_successful(2)(5)(3)().Write(value)
+\endcode
+
+If you use multi-dimensional ports, each individual address contains one independent instance of the chosen plug-in.
+The number of plug-in instances is adjusted during runtime, depending
+on the highest indices used by the user.
+
+The are some cases where it is useful to start the addressing not at zero (e.g. iterative decoding starting with iteration one).
+In that case you can switch off a single address of a multidimensional port with the cse_lib::Status_Out_Plugin_Container< P, 0 >::write_into_results() setter function.
+\code
+...
+decoding_successful(2).write_into_results(false);
+...
+\endcode
+If you set the property to false, the result from this address will not appear in the XML result file.
+
+
+
+\section sec_status_out_plugin Plugin concept
+
+As said before, the behavior of the status out port depends on the used plug-in.
+The third template parameter gives a class type, which contains the plug-in for the port.
+
+As example we choose the mean plug-in, which is defined by the cse_lib::Status_Out_Plugin_Mean.
+The definition of a status out port, which holds mean values of the data written to the port, is quite simple.
+\code
+...
+Status_Out<int, 1, Status_Out_Plugin_Mean> mean_num_iter;
+...
+\endcode
+
+This plug-in has a \ref cse_lib::Status_Out_Plugin_Mean::Write() "Write" function, too.
+
+What is the difference between the two status_out objects?
+
+When using the Read function, the default plug-in contains only the plain data. But the mean plug-in gives
+ the mean value of all written data!
+
+With this concept a lot of statistics can be created with a minimum of implementation effort.
+See \ref status_out_plugin for a list of available plug-ins.
+
+
+\section status_out_result_file Result file
+
+The data stored in the status out ports can be automatically written into a
+result file, if the class Manage_Module_Result is used.
+This class is the corresponding class to the \ref Manage_Module_Config "configuration class".
+
+*/

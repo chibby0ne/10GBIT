@@ -1,0 +1,51 @@
+/** \page howto_use_module_page How to use a single module
+
+This page shows how to use a single module in a own simulation environment.
+
+The usage of a module consists of the following steps:
+\li Create an instance of the module.
+\li Connect input and output ports.
+\li Perform configuration.
+\li Call the Run() method.
+
+Here is a small example for an AWGN channel:
+\code
+
+#include "cse_lib.h"
+
+using namespace cse_lib;
+
+int main()
+{
+
+	// Buffer holding the input values
+	Buffer<complex<float> > channel_in(100);
+
+	// Get XML configuration file.
+	Manage_Module_Config xml_config("config.xml");
+
+	// Create instance.
+	Channel_AWGN channel_awgn;
+
+	// Set input ports.
+	channel_awgn.input_symb(channel_in);
+
+	// Configure the module with the help of the XML file (<module> tag)
+	xml_config.Configure_Module(channel_awgn);
+
+	//
+	// It is also possible to set the parameters by hand:
+	// channel_awgn.noise_variance(0.2);
+	//
+
+	// Perform the noise operation.
+	channel_awgn.Run();
+
+	// Ouput data is now available in channel_awgn.output_symb().
+}
+
+\endcode
+
+
+*/
+

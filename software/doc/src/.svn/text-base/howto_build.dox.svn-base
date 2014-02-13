@@ -1,0 +1,43 @@
+/** \page howto_build How to build the library or a included simulation chain
+
+The CSE environemnt consits of two different parts
+\li The library directory, which contains all the classes of the CSE
+\li The chains directory, containings some simulation chains, which use the library
+
+\section Requirements
+\li g++ version 4.x under Linux, MS Windows or MacOS X
+\li MSVC under MS Windows
+\li CMake
+
+The used build system is the plattform independet <a href="http://cmake.org">CMake</a> tool.
+CMake provides an user friendly and a convenience interface. The simple usage is explained in the following sections
+
+\section gcc_makefile GNU g++ with Makefile
+To build only the library  go into the library/Cmake directory and execute the following commands
+\code
+cmake .
+make -j
+\endcode
+The compiled static linkable library file and the corresponding header file are located in the library/lib directory.
+To build a dynamic linkable library use the target "cse_dynamic".
+\code
+make -j cse_dynamic
+\endcode
+
+A debug version of the library can be created by setting the cmake variable  "CMAKE_BUILD_TYPE" to "Debug":
+\code
+cmake -D CMAKE_BUILD_TYPE=Debug .
+make -j
+\endcode
+Other build types are "Release" for highly optimized code and "Prof" for Profiling the code.
+The "Release" executable is about 4 to 5 times faster than the "Debug" or "Prof" executables.
+
+Each simulation chain has a subdirectory called CMake to build the simulation chain with the same command as the library.
+The standard simulation chain uses the static version of the library. 
+
+<b>It is not necessary to build the libray if you want to build a simulation chain. </b><br>
+The CMake tool automatically builds all components which are necessary for the simulation chain.
+
+\section msvc MSVC 2010
+CMake under MS Windows creates MSVC Project files. The library or the chain can be created with the standard MSVC workflow.
+*/

@@ -1,0 +1,120 @@
+/** \page naming_guidelines_page Naming Guidelines
+
+The CSE library has simple and intuitive naming guidelines for their components.
+
+\section Naming
+
+ \subsection naming_classes Classes
+ 
+ Starting with the general functionality a specializing with each new word.\n
+ Abbreviations should be written in upper case.
+
+ Examples:
+\code
+ Decoder_LDPC_Binary
+ Decoder_LDPC_Binary
+ Decoder_LDPC_Non_Binary
+ Decoder_LDPC_Binary_HW_DVB_S2
+ Decoder_Turbo_Binary
+ Channel_AWGN
+ Channel_Raleigh
+\endcode
+
+Since each class inherits from two or three classes, cf. \ref chain_concept_page,
+appendices are used for these parent classes:
+
+\code
+ Channel_AWGN           // The main module class, as used by the user.
+ Channel_AWGN_Interface // The corresponding interface class.
+ Channel_AWGN_Parameter // The corresponding parameter class.
+ Channel_AWGN_Share     // The corresponding share class (optional).
+\endcode
+
+
+ \subsection naming_files Files
+
+The file names should represent the class names in lowercase with underscores.\n
+Abbreviations should be used to produce short file names.
+
+ Example:
+\code
+ dec_ldpc_bin.cpp
+ dec_ldpc_non_bin.cpp
+ dec_turb_bin.cpp
+ channel_awgn.cpp
+\endcode
+
+According to the purpose of a header file, it has different appendices:
+
+Example:
+\code
+ channel_awgn.h         // The class definition of the AWGN channel.
+ channel_awgn.cpp       // The content for channel_awgn.h.
+ channel_awgn_param.cpp // The _Parameter class of Channel_AWGN.
+ channel_awgn_iface.cpp // The _Interface class of Channel_AWGN.
+ channel_awgn_share.cpp // The _Share class of Channel_AWGN (optional).
+\endcode
+
+\subsection naming_ports Naming of input and output data ports of the modules
+
+ -# The port type input or output (input, output)
+ -# The data type bits or symbols (_bits, _symb)
+ -# The representation domain: hard (no suffix), LLR (suffix _llr), probability domain (suffix _prob) 
+ -# Kind of data e.g., extrinsic or a posteriori values, optional (_extr, _app)
+ -# Additional extra information if needed
+
+Examples:
+\code
+ input_bits      // hard bits (0, 1)
+ input_bits_llr  // LLR values of the bits
+ input_bits_prob // Probability values of the bits [ 0, 1 ]
+ input_symb      // either hard symbols (e.g., 0, ..., 255, Galois field arithmetic), or complex channel symbols
+ input_symb_llr  // LLR values of the symbols, normalized to symbol 0
+ input_symb_prob // Probability values of the symbols [ 0, 1 ]
+ output_bits          // hard bits (0, 1)
+ output_bits_llr_app  // APP LLR values of the bits
+ output_bits_llr_extr // Extrinsic LLR values of the bits
+\endcode
+
+The range of values dictates in some cases the data type, e.g., hard bits have
+to use unsigned int. Other ports might use different data types for their content,
+e.g., LLR values can be represented with quantized values (int) or floating
+point values.
+
+Examples:
+\code
+
+// hard bits (either 0 or 1)
+Data_In<unsigned int> input_bits;
+
+// quantized soft bits (LLR values)
+Data_In<int>          input_bits_llr;
+
+// float soft bits (LLR values)
+Data_In<float>        input_bits_llr;
+
+// probability values for the binary case
+Data_In<float, 2>     input_bits_prob;
+
+// complex channel symbols (e.g., after quantized demapper)
+Data_Out<complex<int> > output_symb;
+
+// hard symbols (e.g., after Galois field LDPC decoder)
+Data_Out<unsigned int> output_symb;
+
+// soft symbols (LLR values)
+Data_Out<complex<int> >          output_symb_llr;
+
+// probability values
+Data_Out<complex<float>, N>      output_symb_prob;
+
+\endcode
+
+
+\subsection dir_struct Directory Structure
+
+\subsection Miscellaneous
+
+
+
+*/

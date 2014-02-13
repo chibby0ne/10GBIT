@@ -1,0 +1,17 @@
+\form#0:\[ \ln \left( 1 + e^{-|x|}\right) \approx max \left( \frac{5}{8} - \frac{|x|}{4}, 0 \right) \]
+\form#1:\[ min^*(a,b) = min(a,b) + \ln \left( 1 + e^{-|a+b|}\right) - \ln \left( 1 + e^{-|a-b|}\right) \]
+\form#2:$\delta$
+\form#3:\begin{eqnarray} min^*(a,b) = min(a,b) + corr\_term \\ corr\_term = \log\left(1 + e^{(|a-b|)} \right) \\ min^*(a,b,c) = min^*(min^*(a,b), c) \end{eqnarray}
+\form#4:\[ s_0, s_1, s_2, \dots p1^1_0, p1^2_0, p1^3_0, p1^1_1, \dots p2^1_0, p2^2_0, p2^3_0, p2^1_1, \dots \]
+\form#5:\[ j=0,\dots, num\_values - 1 \]
+\form#6:\[ \textrm{if j mod 2 = 0, let (A,B) = (B,A) (invert the couples)} \]
+\form#7:\begin{eqnarray} \textrm{if j mod }4 &=& 0 \textrm{, then } P(j) = 0 \\ \textrm{if j mod }4 &=& 1 \textrm{, then } P(j) = num\_values / 2 + P1 \\ \textrm{if j mod }4 &=& 2 \textrm{, then } P(j) = P2 \\ \textrm{if j mod }4 &=& 3 \textrm{, then } P(j) = num\_values / 2 + P3 \end{eqnarray}
+\form#8:\[ i = (P0 * j + P(j) + 1) \textrm{ mod } num\_values \]
+\form#9:$k_{ldpc}$
+\form#10:$n_{ldpc}$
+\form#11:$D^0$
+\form#12:$D^1$
+\form#13:$D^2$
+\form#14:$\frac{E_B}{N_0}$
+\form#15:$\frac{E_S}{N_0}$
+\form#16:$\sigma^2$

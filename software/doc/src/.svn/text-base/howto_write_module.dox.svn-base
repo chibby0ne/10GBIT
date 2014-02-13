@@ -1,0 +1,368 @@
+/** \page howto_write_module_page How to write a new functional module
+
+Before starting to implement or convert existing code to a new module, please read
+the \ref general_module_concept chapter. The chapter explain the design idea behind 
+the software.
+
+For writing new modules for the simulation you have to do the following steps:
+
+\li \ref create_param
+\li \ref interface_class
+\li \ref classcoding
+\li \ref doc
+
+In the following these steps are explained in more detail at the example of a
+hardware-compliant LDPC decoder model.
+
+
+\section create_param Create a parameter class for the module
+
+
+In a first step it is necessary to generate the parameter class that
+corresponds to the module we want to implement. This parameter class contains
+all parameters that are needed by the decoder to run. In the example these are
+things like quantization, scheduling, number of iteration, etc. The parameter
+class is derived from the class Base_Parameter.
+
+The empty parameter class looks as follows:
+
+\code
+#ifndef DEC_LDPC_BINARY_HW_PARAM_H_
+#define DEC_LDPC_BINARY_HW_PARAM_H_
+
+#include "../base/base_param.h"
+
+/// Hardware-compliant binary LDPC decoder parameters.
+/**
+ * \ingroup parameter
+ */
+class Decoder_LDPC_Binary_HW_Parameter : public Base_Parameter
+{
+
+public:
+
+  Decoder_LDPC_Binary_HW_Parameter()
+  {
+    instance_name(Unique_ID());
+    Set_Default_Values();
+  }
+
+  virtual ~Decoder_LDPC_Binary_HW_Parameter() { }
+
+  /// Unique identification string of the module.
+  static string Unique_ID(){ return "Decoder_LDPC_Binary_HW";}
+
+protected:
+  
+
+};
+#endif
+\endcode
+
+The parameter header files have the suffix "_param.h", thus this code is stored
+in the file dec_ldpc_binary_hw_param.h.  The include directives have to contain
+relative paths to the lib directory for the base and the assistance
+directories. By default, the instance name should be equal to the name of the
+module class.
+
+\section add_param Adding parameters to the class
+
+Parameters for the modules are added to the public part of the class
+(shown in the following for the quantization parameters). Use Doxygen comments
+here (triple slash). All parameters have to use the container class Param.
+
+\code
+public:
+  ....
+
+  /// Number of bits for channel values
+  Param<unsigned int> bw_chv;
+
+  /// Number of bits for fractional part of all values
+  Param<unsigned int> bw_fract;
+
+  /// Number of decoding iterations
+  Param<unsigned int> num_iter;
+  
+  /// Decoding algoritm
+  enum DEC_TYPE_ENUM {MIN_SUM, BP};
+  Param<DEC_TYPE_ENUM> dec_algo;
+  
+  ...
+\endcode
+
+Use the bw_ prefix to indicate that the parameter is used to set a quantization
+value (bw = bit-width). Use the num_ prefix for countable things
+(num_info_bits, num_bits_per_symbol, ...).
+
+The cse_lib::Param container class provides the () operator to set or get a value.
+Therefore the implementation of accessor functions is not necessary.
+
+
+\section param_default Initialization of parameters
+
+In order to set these values to appropriate values, the function
+Set_Default_Values() is called from within the constructor. This function is
+defined in the protected part and uses the cse_lib::Param::Init-function of the cse_lib::Param-container:
+\code
+protected:
+
+  /// Set all values to their default
+  /**
+   * Default values are:
+   *  - bw_chv    : 6
+   *  - bw_fract  : 2
+   *  - num_iter  : 10
+   *  - dec_algo  : MIN_SUM
+   */
+  virtual void Set_Default_Values()
+  {
+    bw_chv.Init(6, "bw_chv", param_list_);
+    bw_fract.Init(2, "bw_fract", param_list_);
+    num_iter.Init(10, "num_iter", param_list_);
+    dec_algo.Init(MIN_SUM, "Decoding algorithm", param_list_);
+  }
+\endcode
+
+The first parameter of the cse_lib::Param::Init function gives the default value
+for the parameter.  The second parameter describes the parameter by a string
+which is used for the output and for detection of the parameter in a
+configuration structure like XML. <b>This string is required to be set to the
+name of the variable.</b>
+The last parameter is a list object, which is inherently available from the
+parent class Base_Parameter.  Registering each parameter in this list enables
+some comfort functionalities like printing all parameters by using the
+streaming operator (<<) on a module object or automatic configuration of the
+module.
+
+<b>Document the Set_Default_Values() method with doxygen comments that state
+the default values for the module! Only then the user knows about the default
+values from the documentation!</b>
+
+
+\section auto_conf Add Automatic Configuration Capability
+
+
+By default, the modules are able to configure themselves without any further
+code. The cse_lib::Base_Parameter class offers the function
+Config_From_Data_Struct() which reads the values of all parameters that are
+stored in the list param_list_ (see above).
+
+The function is able to read the data types bool, int, float, double, long long
+int, and string. For int values it is possible to use prefixes like "0x" or 0o".
+
+Enum types are not included inherently. They are treated like strings, but the
+strings have to be linked to the enum type.  The string should be equal to the
+enum-name, such that when reading the Doxygen documentation it is possible to
+determine the possible configuration values.  Append the following lines to the
+Set_Default_Values method to link the enum values with a string:
+\code
+  ...
+  dec_algo.Link_Value_String(MIN_SUM, "MIN_SUM");
+  dec_algo.Link_Value_String(BP, "BP");
+  ...
+\endcode
+
+Note, that it is also possible to implement an own
+Config_From_Data_Struct-function. In the _Parameter class.  This can be useful,
+when some parameters are required only for certain configurations. But the
+default is to use the function of the cse_lib::Base_Parameter.
+
+\code
+public:
+  ...
+  
+  /// Read the specific parameters from an data tree
+  void Config_From_Data_Struct(Config_Data_Structure& config_tree)
+  {
+    bw_chv.Set_By_Data_Struct(config_tree);
+    bw_fract.Set_By_Data_Struct(config_tree);
+    num_iter.Set_By_Data_Struct(config_tree);
+    if (bw_chv == 6)
+        some_parameter.Set_By_Data_Struct(config_tree);
+    ...
+  }
+
+  ...
+\endcode
+
+
+The parameter class for the module is complete now.
+
+
+\section interface_class Choosing or writing an interface class
+
+The framework provides a lot of interface classes for different types of
+modules. If your new module matches one of these types, you do not have to
+write a new interface class. If that is not the case, you have to write a new
+interface class, but it consists of only a few lines of code:
+
+\code 
+#ifndef DEC_LDPC_BINARY_HW_IFACE_H_
+#define DEC_LDPC_BINARY_HW_IFACE_H_
+
+#include "../base/base_iface.h"
+
+class Decoder_LDPC_Binary_HW_Interface : public Base_Interface
+{
+
+public:
+
+	Decoder_LDPC_Binary_HW_Interface()
+	{
+	  input_llr.Register("input_llr", input_data_list_);
+	  output_bits.Register("output_bits", output_data_list_);
+	}
+
+	virtual ~Decoder_LDPC_Binary_HW_Interface() {}
+
+	/// Input port which hold the received codeword
+	Data_In<int> input_bits_llr;
+	
+	/// Output port which hold the decoded bits
+	Data_Out<unsigned int> output_bits;
+
+};
+#endif // DEC_LDPC_BINARY_HW_IFACE_H_
+\endcode
+
+This class defines the input and output ports with the two containers Data_In
+and Data_Out.  Similar to the parameter class, this container provides the ()
+operator to access the data.  The input_data_list_ and the output_data_list_
+hold all data I/O objects. These lists are necessary for the automatic
+connection feature of the simulation chain. The header file has the suffix "_iface".
+
+Naming of the ports has to comply to the rules as shown in \ref naming_ports.
+
+
+Besides data ports, the module can also offer status information
+using the Status_Out container:
+
+\code
+
+	/// Number of decoder iterations needed?
+	Status_Out<unsigned int> num_iterations;
+	
+	/// Parity check condition satisfied?
+	Status_Out<bool> decoding_successful;
+
+\endcode
+
+The Status_Out container allows for calculation of statistics. For more information,
+please refer to \ref howto_use_status_out_page.
+
+
+\section classcoding Writing the module class itself
+
+
+After we created the parameter class and made sure that we are able to parse
+the XML file, it is time to write the code for the module.
+For that we have to write two files:
+\li The header file containing the class definition
+\li The cpp file containing the functionality of the class
+
+
+\section header_file The module class definition (header)
+
+As mentioned before, each module is derived from at least two classes: the
+interface and the parameter class.  In our example the default class definition
+looks as follows:
+
+\code
+#ifndef DEC_LDPC_BINARY_HW_H_
+#define DEC_LDPC_BINARY_HW_H_
+
+#include "dec_ldpc_bin_hw_iface.h"
+#include "dec_ldpc_bin_hw_param.h"
+
+
+/// Binary LDPC decoder class
+class Decoder_LDPC_Binary_HW : public Decoder_LDPC_Binary_HW_Interface,
+                               public Decoder_LDPC_Binary_HW_Parameter
+{
+
+public:
+  
+  Decoder_LDPC_Binary_HW()
+  virtual ~Decoder_LDPC_Binary_HW();
+
+  /// Iterate for a whole block. This function has to be
+  int Run();
+
+  
+protected:
+
+  void Init();
+  void Alloc_Mem();
+    
+private:
+  ...
+};
+#endif
+\endcode
+
+The order of inheritance has to occur in alphabetical order:
+ -# _Interface
+ -# _Parameter
+ -# _Share (one or more classes)
+
+This results in a fixed positions for classes of the same type within the
+inheritance diagram generated by doxygen.  Thus, it allows for a more intuitive
+browsing through the documentation.
+
+The Init() function sets derived parameters, resizes the output ports
+calling Alloc_Mem(), and performs other tasks that are required by the module
+before it is save to invoke the Run() function.
+Now class variables and functions can be defined in the private part and the
+according content of the functions can be included in the body of the class.
+
+\subsection cpp_file The module class body (.cpp)
+
+The module functionalities is implemented in the cpp file.  A minimum template
+of a module body looks like follows:
+
+\code
+#include "dec_ldpc_bin_hw.h"
+
+using namespace std;
+
+Decoder_LDPC_Binary_HW::Decoder_LDPC_Binary_HW() { }
+
+Decoder_LDPC_Binary_HW::~Decoder_LDPC_Binary_HW() { }
+
+Decoder_LDPC_Binary_HW::Init()
+{
+  ...
+  Alloc_Mem();
+
+  // Set the config-variables to false after initialization.
+  param_list_.config_modified(false);
+  input_data_list_.port_modified(false);
+}
+
+Decoder_LDPC_Binary_HW::Alloc_Mem()
+{
+}
+
+Decoder_LDPC_Binary_HW::Run()
+{
+  if(param_list_.config_modified() || input_data_list_.port_modified())
+    Init();
+
+  Decoder_Function_Call();
+}
+\endcode
+The if statement in the Run function is mandatory.  It allows for an automatic
+run of the Init function if a parameter or port has changed.
+
+
+\section doc Documentation of the Module
+
+<b>
+Remember to document the interfaces, the parameters, and the functionality of the modules
+with doxygen comments such that other users can use your module!
+</b>
+Use the normal C++ comments for the rest of your code.
+
+*/
+

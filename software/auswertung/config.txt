@@ -1,0 +1,12 @@
+## database_fileName ## The next line has to be line 2
+min_sum_802_3an
+## usernameName ## The next line has to be line 4
+schlaefer
+## speicherOrt ## The next line has to be line 6
+/home/tesla/chain/10GBASE-T/software/auswertung/min_sum_802_3an.m
+/net/user/r1/unix/schlaefer/Downloads/foobar.m
+0
+0
+1
+3
+

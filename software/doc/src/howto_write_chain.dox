@@ -1,0 +1,192 @@
+/** \page howto_write_chain_page How to set-up an own simulation chain
+
+Setting up a new specific simulation chain is a simple task with the CSE environment. 
+
+The process has the following steps:
+
+\li \ref inst_conf_res
+\li \ref inst_modules
+\li \ref connect_modules
+\li \ref config_modules
+\li \ref exec_modules
+\li \ref write_res
+\li \ref iter_over_var
+
+
+Create a new main file and include the cse_lib.h file and introduce the cse_lib namespace.
+Copy an existing CMakeList.txt file and adapt the project name in it to get a cmake makefile.
+Now you have the start framework to set-up a new chain.
+
+The following sections show the several steps at an example chain.
+The \ref example_tukl_chain.cpp "source code" of the chain is available as an example.
+
+
+\section inst_conf_res Create an instance of the configuration class and the result class
+
+These two classes are very easy and similar to use.
+They must be instantiated with the filenames as parameter.
+
+\code
+#include "cse_lib.h"
+
+using namespace cse_lib;
+
+int main()
+{
+
+	Manage_Module_Config xml_config("config.xml");
+	Manage_Module_Result xml_result("result.xml");
+}
+\endcode
+
+The Manage_Module_Config class parses the given XML file and creates and
+executes the described parameter units.  In addition it handles the given
+iteration parameter(s).
+
+The xml_result instance creates a new file. If the given file already exists the class will 
+overwrite it!
+
+
+\section inst_modules Instantiate the functional modules
+
+You must create a new instance for each module you want to use in your chain.
+If you need a module twice, create two instances with different instance names to distinguish them.
+
+The Manage_Module_Config class identifies the module instances by its instance name stored in the 
+cse_lib::Base_Parameter::instance_name container.
+
+\code
+	Source_Bits source_bits;
+	Encoder_LDPC_GMR enc_ldpc;
+	Interleaving_GMR<unsigned int> interleaver;
+	interleaver.instance_name("Interleaver_GMR");
+	Mapper mapper;
+	Channel_AWGN channel_awgn;
+	Demapper demapper;
+	Converter_Float_Fixpoint<float, int> converter;
+	Interleaving_GMR<int> deinterleaver;
+	deinterleaver.instance_name("Deinterleaver_GMR");
+	Decoder_LDPC_GMR dec_ldpc;
+	Statistics_Error_Rates error_rates;
+\endcode
+
+You see that we have two instances of the Interleaving module with two different names!
+
+
+\section connect_modules Connect the data ports of the modules
+
+The data ports of the modules can be easily connected. The input ports of the modules can be 
+connected to an output port of another module.
+With this concept it is also possible to connect an output port to several input ports. 
+Simple getter and setter code constructs handle this task.
+
+\code
+	enc_ldpc.input_bits(source_bits.output_bits());
+	interleaver.input(enc_ldpc.output_bits());
+	mapper.input_bits(interleaver.output());
+	channel_awgn.input_symb(mapper.output_symb());
+	demapper.input_symb(channel_awgn.output_symb());
+	converter.input(demapper.output_bits_llr());
+	deinterleaver.input(converter.output());
+	dec_ldpc.input_bits_llr(deinterleaver.output());
+	error_rates.input_bits(dec_ldpc.output_bits());
+	error_rates.input_bits_ref(source_bits.output_bits());
+\endcode
+
+\section config_modules Configure the modules
+
+The CSE infrastructure provides a comfortable way to configure the modules via the given XML file.
+The Manage_Module_Config instance configures the given module fully automatically.
+The identification is done via the instance name.
+
+\code
+
+	xml_config.Configure_Module(source_bits);
+	xml_config.Configure_Module(enc_ldpc);
+	xml_config.Configure_Module(interleaver);
+	xml_config.Configure_Module(mapper);
+	xml_config.Configure_Module(channel_awgn);
+	xml_config.Configure_Module(converter);
+	xml_config.Configure_Module(demapper);
+	xml_config.Configure_Module(deinterleaver);
+	xml_config.Configure_Module(dec_ldpc);
+	xml_config.Configure_Module(error_rates);
+\endcode
+Remember, each time the configuration is changed (e.g., next point of iteration variable) 
+the modules must be re-configured!
+
+
+\section exec_modules Execute the modules
+
+Each module has a cse_lib::Base_Interface::Run() function to calculate the new output data for 
+one block. A while loop construct processes all blocks until a stopping condition is fulfilled.
+\code
+do
+{
+	source_bits.Run();
+	enc_ldpc.Run();
+	interleaver.Run();
+	mapper.Run();
+
+	channel_awgn.Run();
+
+	demapper.Run();
+	converter.Run();
+	deinterleaver.Run();
+	dec_ldpc.Run();
+	result = error_rates.Run();
+}
+while(result == 0);
+
+\endcode
+
+The Statistics_Error_Rates instance error_rates counts the number of processed blocks and returns 
+a specified value if the abort condition is true.
+
+
+\section write_res Write the needed results to a result file
+
+Writing the result, stored in the \ref cse_lib::Status_Out "status output ports" of the modules is 
+as easy as reading the configuration.
+A simple function call creates a sub-tree, which contains the current configuration.
+A second function allows to write the result from one module.
+
+\code
+xml_result.Create_Iteration_Value_Result_Point(xml_config);
+xml_result.Insert_Results_From_Module(demapper);
+xml_result.Insert_Results_From_Module(error_rates);
+xml_result.Write_Current_State();
+\endcode
+
+The last function call writes the XML result file to the file system.
+
+
+\section iter_over_var Iterate over the defined iteration variable(s) in the XML file
+
+Iterating through all iteration points is quite easy. 
+We have to add an additional do while construct around the configuration, execution, and 
+writing results sections.
+\code
+// Instantiation
+
+{
+  // Configuration
+
+  do
+  {
+    // Execution
+
+  }
+  while(...)
+
+  // Writing results
+
+}
+while(xml_config.Update_To_Next_Iter() == 0);
+\endcode
+
+That's it! You have built a new simulation chain with automatic configuration and storage
+of the results.
+
+
+*/

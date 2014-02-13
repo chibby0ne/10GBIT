@@ -1,0 +1,173 @@
+/** \page chain_concept_page Simulation chain concept
+
+The purpose of the CSE is to allow for the integration of complex simulation
+environments, e.g., for different communication standards. The design decisions
+have been made according to a long-year experience within the field of
+communications. Main goals of the CSE are:
+
+\li Reduced development times and costs
+\li Ease of use
+\li Reusability
+\li Extensibility to new applications or standards
+
+In order to achieve these goals, the following design choices have been adopted:
+
+\li fixed interfacing and configuration procedures for functional modules,
+\li strict coding and documentation guidelines,
+\li fully object oriented design.
+
+The simulation environment is composed of functional modules, such as noise generator
+or channel decoder. The functional modules are connected with each other and allow
+for the creation of complex simulation chains.
+
+
+\dot
+  digraph chain {
+      rankdir=LR;
+       node [shape=record, fontname=Helvetica, fontsize=10];
+       mod1 [label="Module\nSource" URL="\ref cse_lib::Source_Bits"];
+       mod2 [label="Module\nEncoder" URL="\ref cse_lib::Encoder_LDPC_UMIC"];
+       mod3 [label="Module\nMapper" URL="\ref cse_lib::Mapper"];
+       mod4 [label="Module\nNoise Channel" URL="\ref cse_lib::Channel_AWGN"];
+       mod5 [label="Module\nDemapper" URL="\ref cse_lib::Demapper"];
+       mod6 [label="Module\nDecoder" URL="\ref cse_lib::Decoder_LDPC_UMIC"];
+       mod7 [label="Module\nStatistics" URL="\ref cse_lib::Statistics_Error_Rates"];
+       mod1 -> mod2 [ arrowhead="open", style="solid" ];
+       mod2 -> mod3 [ arrowhead="open", style="solid" ];
+       mod3 -> mod4 [ arrowhead="open", style="solid" ];
+       mod4 -> mod5 [ arrowhead="open", style="solid" ];
+       mod5 -> mod6 [ arrowhead="open", style="solid" ];
+       mod6 -> mod7 [ arrowhead="open", style="solid" ];
+  }
+\enddot
+
+The well-defined interfaces of the modules allow for the connection of many
+modules and their configuration within a couple of minutes, rather than hours
+and days.
+
+
+
+\section general_module_concept Functional Module Concept
+
+This section describes the general implementation concepts like inheritance
+trees of the functional modules.
+
+Each module is derived from two or three classes that have to be written by the
+module designer:
+\li The \ref interface "interface class", which defines the interface for the
+input and output of data to process. Furthermore, it provides status
+information, like number of used decoder iterations.
+\li The \ref parameter "parameter class", which defines the parameters for
+configuration of the module functionality (e.g., chosen algorithm).
+\li The \ref share "share class", which defines functionality that can be
+shared among multiple modules. This class is optional.
+
+The interface and the parameter class themselves have to be derived from their
+base classes, which are provided by the CSE infrastructure. These classes provide
+higher level data structures, such as lists containing all the parameters or
+data ports of a functional module. You may follow the links of the nodes
+within the following graph to get more detailed information.
+
+\dot
+  digraph example {
+      node [shape=record, fontname=Helvetica, fontsize=10];
+      inter [ label="class Module_Interface\n(User)" URL="\ref interface"];
+      inter_base [ label="class Base_Interface\n(Infrastructure)" URL="\ref cse_lib::Base_Interface"];
+      param [ label="class Module_Parameter\n(User)" URL="\ref parameter"];
+      param_base [ label="class Base_Parameter\n(Infrastructure)" URL="\ref cse_lib::Base_Parameter"];
+      share [ label="class Module_Share\n(User)" URL="\ref share" style="dotted"];
+      mod [label="class Module\n(User)"  URL="\ref modules"];
+       share -> mod [ arrowhead="open", style="dotted" ];
+       param_base -> param [ arrowhead="open", style="solid" ];
+       param -> mod [ arrowhead="open", style="solid" ];
+       inter_base -> inter [ arrowhead="open", style="solid" ];
+       inter -> mod [ arrowhead="open", style="solid" ];
+  }
+\enddot
+
+Example:
+
+A channel encoder gets information bits to encode and has as output the
+corresponding codeword.  These two data interfaces are defined in the interface
+class of the encoder. The data type for a port is one of  the two template
+classes cse_lib::Data_In or cse_lib::Data_Out. The interface classes can be
+shared easily for a group of similar modules like all encoders, because a wide
+range of encoders have the same data I/O.  The \ref interface page gives you an
+overview over all interface classes.  The name of the interface class is the
+class name of the module with the "_Interface" suffix.
+
+The parameter class defines all parameters that can be changed during run-time
+to adapt the module functionality e.g., choosing the parity polynomial for a
+convolutional encoder. A parameter is defined to be of type cse_lib::Param.
+The parameter class is usually very module specific, because the parameters
+have a low similarity for different modules.  The name of the parameter class
+is the class name of the module with the "_Parameter" suffix.  The reason to
+split the parameter in an extra class is that all aspects like definition,
+default values, and automatic configuration over XML of the parameters are
+concentrated in a single class in one file.  The \ref parameter page, lists all
+available parameter classes of the modules.
+
+The share class contains functionality that can be shared among multiple
+modules. E.g., LDPC decoders can share the check node functionality or mapper
+and demapper use the same constellation points for a given modulation. By
+putting such functions into the share class, a high reuse can be achieved.
+
+Each module (class) has a function called "Run" (defined in Base_Interface).
+This function processes one block of data each time it is called.  After
+processing, the result can be read using the output port(s).
+
+See \ref howto_write_module_page for an in-depth documentation of the module concept.
+
+
+\section param_unit_concept Parameter Unit Concept
+
+Configuration of the functional modules is a challenging task.  For a
+standard-compliant simulation environment many modules are connected via their
+data interface.  In order to perform the correct operation, it is mandatory to
+configure every single module.  Usually a standard provides a header word,
+defining the current operation of the circuit.  This header word has to be
+translated into other parameters, such as modulation scheme, coding scheme,
+polynomials, etc.  Parameter units are used exactly for this task:
+
+\dot
+  digraph example {
+      node [shape=record, fontname=Helvetica, fontsize=10];
+      param [ label="class Parameter_Unit_DVB_S2_Parameter\n(User)" URL="\ref parameter"];
+      share [ label="class Parameter_Unit_DVB_S2_Share\n(User)" URL="\ref share" style="dotted"];
+      inter [ label="class Base_Interface\n(Infrastructure)" URL="\ref cse_lib::Base_Interface"];
+      base_param [ label="class Base_Parameter\n(Infrastructure)" URL="\ref cse_lib::Base_Parameter"];
+      mod [label="class Parameter_Unit_DVB_S2\n(User)"  URL="\ref param_unit"];
+       param -> mod [ arrowhead="open", style="solid" ];
+       base_param -> param [ arrowhead="open", style="solid" ];
+       share -> mod [ arrowhead="open", style="dotted" ];
+       inter -> mod [ arrowhead="open", style="solid" ];
+  }
+\enddot
+
+Unlike functional modules, parameter units do not offer data ports for data
+processing.  Instead, their inputs are parameters (like the header word of a
+standard) and their output are derived parameters (like coding scheme).
+Both, input and output parameters, are defined in the _Parameter class.
+The data type cse_lib::Param is used for the input, and cse_lib::Param_Out is
+used for the output.  The usage of a shared class is optional, but allows to
+access predefined data types of available modules.
+
+As for functional modules, each parameter unit provides a "Run" function
+(defined in Base_Interface that can be called, when the input parameters have
+been set. After calling the Run function, the output parameters are valid.
+Automatic concatenation, i.e., propagation of parameters between parameter
+units is supported (one-way direction).
+
+Besides the usage for translation of standard-specific parameters into
+module-specific parameters, the concept allows for further calculation tasks.
+E.g., consider the signal-to-noise ratio (SNR) issue. Sometimes one wants to
+use \f$\frac{E_B}{N_0}\f$, sometimes \f$\frac{E_S}{N_0}\f$. But modules like
+channel or demapper are only interested in the noise variance \f$\sigma^2\f$.
+Instead of writing modules that cope with \f$\frac{E_B}{N_0}\f$ and
+\f$\frac{E_S}{N_0}\f$, it is convenient that the modules just retrieve the
+noise variance from the parameter unit. Only the parameter unit is responsible
+for translating any kind of SNR into the noise variance.
+
+See \ref howto_write_param_unit_page for an in-depth documentation of the parameter
+unit concept.
+*/

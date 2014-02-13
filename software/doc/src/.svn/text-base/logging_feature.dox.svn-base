@@ -1,0 +1,88 @@
+/** \page logging_feature_page Logging Message Features
+
+The CSE framework contains a basic logging level management.
+
+It allows for a separate handling of the three logging levels: hlp_fct::logging::ERROR, hlp_fct::logging::WARNING, hlp_fct::logging::INFO, where
+
+\li INFO corresponds to "cout",
+\li WARNING corresponds to "clog", and
+\li ERROR corresponds to "cerr".
+
+The hlp_fct::logging::Msg function is the standard way to write error, warning or information messages to the standard I/O.
+The logging feature is inherent available within the framework, since the hlp_fct namespace is available within the cse_lib namespace.
+No additional external library is needed.
+
+\code
+Msg(INFO, instance_name(), "There is something I would like to inform you about.");
+Msg(WARNING, instance_name(), "There might be something wrong here.");
+Msg(ERROR, instance_name(), "Something is definitely going wrong here.");
+\endcode
+
+The output of these function calls are:
+\code
+Info [Calling_class]: There is something I would like to inform you about.
+Warning [Calling_class]: There might be something wrong here.
+Error [Calling_class]: Something is definitely going wrong here.
+\endcode
+
+
+\section init The Logging_Management class
+
+The hlp_fct::logging::Logging_Management class offers you features that give you more control over the output behavior of the Msg function.
+
+The main features are:
+
+\li disable / enable a certain logging level
+\li redirect the output of a certain logging level to a file
+
+To use these features you create an instance of the hlp_fct::logging::Logging_Management class at the beginning of your
+program.
+An instance of this class is not needed in order to use the Msg function to print out messages!
+It is only required if you want use the features listed above.
+
+\code
+...
+Logging_Management log;
+...
+\endcode
+
+
+\subsection on_off Enable or disable the output of a logging level
+
+To enable or disable the output of a certain logging level is very simple by a function call.
+The following code shows the usage for the ERROR logging level.
+\code
+...
+log.Disable(ERROR);		// Disable the output of all errors
+...
+log.Enable(ERROR);		// Enable the output of all errors
+...
+\endcode
+
+
+\subsection redirect Redirect the output to a file
+
+Another nice feature is to direct the output to a file. A simple function call 
+with the filename as parameter will do.
+\code
+log.Redirect(WARNING, "warnings.log"); // Redirect all warnings from now on to the file "warnings.log"
+\endcode
+
+
+\section remarks Remarks
+
+The behavior of a logging level can be reset to the original behavior with the Reset function.
+
+\code
+log.Reset(WARNING); // Reset the behavior for warnings
+\endcode
+
+Usually, the original behavior is to use cout, clog, and cerr.
+
+<B>If you disable or redirect a logging level, all other outputs which go through the C++ standard I/O streams 
+will also be disabled or redirected! </B>
+
+See \ref example_logging.cpp "example_logging.cpp" for an example file.
+
+
+*/

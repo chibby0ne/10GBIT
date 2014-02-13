@@ -1,0 +1,72 @@
+/**
+ \mainpage Welcome to the Creonic Simulation Environment (CSE)
+
+ \image html creonic_logo.png
+ \image latex creonic_logo.eps width=10cm
+
+ <br>
+ This documentation provides all information about the CSE. <br>
+ Browse through the classes or choose one of the following sections to get started.
+
+ The following sections show the concepts and how to use the library.
+ \li \ref chain_concept_page
+ \li \ref naming_guidelines_page
+ \li \ref howto_use_module_page
+ \li \ref howto_write_chain_page
+ \li \ref howto_write_xml_config_page
+ \li \ref howto_build
+
+
+ The next sections explain how to extend the functionality of the library.
+ \li \ref howto_write_module_page
+ \li \ref howto_use_status_out_page 
+ \li \ref howto_write_param_unit_page
+ \li \ref logging_feature_page
+ \li \ref debug_feature_page
+
+
+Or go directly to the \ref modules description.
+
+\remark
+
+Copyright © 2010 - 2011 Creonic GmbH
+
+\ref copyright_3rd_sw_page
+
+
+*/
+
+Define groups for the different classes
+
+/**
+\defgroup leaf Leaf components
+\defgroup modules Functional modules
+\ingroup leaf
+\defgroup param_unit Parameter units
+\ingroup leaf
+\defgroup status_out_plugin Status_Out statistic plugins
+\ingroup leaf
+\defgroup parent Parent components
+\defgroup parameter Parameter classes of the modules
+\ingroup parent
+\defgroup interface Interface classes of the modules
+\ingroup parent
+\defgroup share Share classes of the modules
+\ingroup parent
+\defgroup standards Standard compliant modules
+\defgroup standards_gmr GMR (Geo Mobile Radio)
+\ingroup standards
+\defgroup standards_dvb_s2 DVB-S2 (Digital Video Broadcast, 2nd generation)
+\ingroup standards
+\defgroup infrastructure Infrastructure
+\defgroup base_class Base classes of the modules (advanced users only)
+\ingroup infrastructure
+\defgroup assistance Functional modules independent classes, for generic usage
+\ingroup infrastructure
+*/
+
+/**
+
+
+
+*/
